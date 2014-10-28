@@ -18,9 +18,15 @@ url = "http://cyber.mephi.ru/Faculty.html" -- преподаватели каф�
 findNodes :: Cursor -> [Cursor]
 findNodes = element "TD" >=> attributeIs "bgcolor" "#e1e4e6" &// element "B" &// element "A" >=> child
 
+{-
+  Извлечь контент из узла. Для извлечения ссылок на страницы преподавателей нужно использовать функцию attribute
+-}
 extractData :: Cursor -> T.Text
 extractData = T.concat . content
 
+{-
+  Извлекаем содержимое страницы, парсим её и возвращаем курсор на корень DOM-дерева
+-}
 cursorFor :: String -> IO Cursor -- тут тип важен
 cursorFor u = do
      page <- simpleHttp u
