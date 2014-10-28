@@ -38,7 +38,7 @@ do
 Поставить любой пакет можно выполнив команду
 `cabal install <packet_name>`
 
-Вам, скорее всего, придётся поставить пакеты `http-conduit html-conduit xml-conduit`. О них можно почитать [тут](http://www.yesodweb.com/book/http-conduit) и [тут](https://hackage.haskell.org/package/html-conduit) 
+Вам, скорее всего, придётся поставить пакеты `http-conduit html-conduit xml-conduit`. О них можно почитать [тут](http://www.yesodweb.com/book/http-conduit), [тут](http://hackage.haskell.org/package/xml-conduit-0.7.0.1/docs/Text-XML-Cursor.html) и [тут](https://hackage.haskell.org/package/html-conduit) 
 Кроме того, мы будем использовать стандартный модуль Data.Text, про него [здесь](http://hackage.haskell.org/package/text-0.11.2.0/docs/Data-Text.html).
 
 Импорт модулей, отдельных функций выглядит следующим образом:
