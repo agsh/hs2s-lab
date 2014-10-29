@@ -58,7 +58,7 @@ import Data.Text (replace) -- если мы хотим использовать 
 |По списку языков программирования википедии (http://en.wikipedia.org/wiki/List_of_programming_languages) составить список кортежей: год  появления, названия. Языки без указания годов появления исключить.|Сергей Горюшкин|
 |Составить отсортированный список преподавателей кафедры 22 и их хобби||
 |Составить список 50 худших преподавателей (http://www.mephist.ru/mephist/prepods.nsf/teachers) Тут придётся использовать http://hackage.haskell.org/package/iconv-0.4||
-|Составить отсортированный список преподавателей (http://www.mephist.ru/mephist/prepods.nsf/teachers) по количеству изречённых перлов. Тут придётся использовать http://hackage.haskell.org/package/iconv-0.4||
+|Составить отсортированный список преподавателей (http://www.mephist.ru/mephist/prepods.nsf/teachers) по количеству изречённых перлов. Тут придётся использовать http://hackage.haskell.org/package/iconv-0.4|Анатолий Мальцев|
 |Составить список преподавателей кафедры 22 и дисциплин, которые они сейчас ведут (Список брать запросом http://eis.mephi.ru/TimeTable/timetableshow.aspx?gr=&prep=%D0%A0%D1%8B%D0%B1%D0%B8%D0%BD%D0%B0&typ=prep)||
 
 ### Заключение
