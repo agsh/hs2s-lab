@@ -6,6 +6,7 @@ import qualified Data.Text as T -- представление юникодной
 import Data.Text (replace) -- берём из модуля Data.Text только функцию replace (многие ф-ии из него перекрывают станартные из Prelude)
 import Text.HTML.DOM (parseLBS) -- из пакета html-conduit
 import Text.XML.Cursor (Cursor, attributeIs, content, element, fromDocument, child, ($//), (&|), (&//), (&/), (>=>)) -- из пакета xml-conduit, для работы с DOM-деревом документа
+import Network (withSocketsDo) -- workaround для windows
 
 n = T.pack "\r\n" -- перевод строки в плохой вёрстке сайта cyber.mephi.ru
 
@@ -29,7 +30,7 @@ extractData = T.concat . content
 -}
 cursorFor :: String -> IO Cursor -- тут тип важен
 cursorFor u = do
-     page <- simpleHttp u
+     page <- withSocketsDo $ simpleHttp u
      return $ fromDocument $ parseLBS page
 
 main = do
