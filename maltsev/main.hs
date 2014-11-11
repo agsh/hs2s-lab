@@ -3,7 +3,7 @@
 import Text.Printf
 import Text.Regex.Posix
 import Data.Function (on)
-import Data.List (sortBy)
+import Data.List (sortBy, nubBy)
 import Network.HTTP.Conduit (simpleHttp)
 import Codec.Text.IConv as IConv
 import qualified Data.Text as T
@@ -63,12 +63,18 @@ real_jokes j 				= read j
 sortOnJokesCount :: Ord b => [(a, b)] -> [(a, b)]
 sortOnJokesCount arr = reverse $ sortBy (compare `on` snd) arr
 
-tuplesToTeachers :: [(String, Int)]-> [Teacher]
+tuplesToTeachers :: [(String, Int)] -> [Teacher]
 tuplesToTeachers [] = []
 tuplesToTeachers ((name, jokes):xs) = Teacher name jokes : tuplesToTeachers xs
 
+symEq :: (String, Int) -> (String, Int) -> Bool
+symEq (x,y) (u,v) = (x == u && y == v)
+
+removeDuplTuples :: [(String, Int)] -> [(String, Int)]
+removeDuplTuples = nubBy symEq
+
 outputTeachers :: Teacher -> [Char]
-outputTeachers (Teacher name jokes) = (printf "%3d %6s ---> %40s" jokes  (perls :: String) (name :: String) :: String)
+outputTeachers (Teacher name jokes) = (printf "%3d %6s %10s %40s" jokes  (perls :: String) ("--->" :: String) (name :: String) :: String)
 	where
 		perls = if elem last_digit [5,6,7,8,9,0]
 				then
@@ -93,19 +99,19 @@ main = do
 			mapM
 				(\tuple -> do
 					c <- cursorFor $ printf baseUrl $ snd tuple
+					putStr "."
 					return $ ((fst tuple), real_jokes $ last $ map T.unpack $ c $// findJokesCount &| extractData)
 				)
 				tuples
 	jokes <- jokesIO
+	putStrLn " Collected all data. Processing ..."
 
 	putStrLn . unlines . 
 		map 
-			(\(index, value) -> (show index) ++ ") " ++ value ) 
+			(\(index, value) -> (printf "%3s) " $ show index) ++ value ) 
 			$ zip [1..] 
 			$ map outputTeachers 
 			$ tuplesToTeachers 
+			$ removeDuplTuples
 			$ sortOnJokesCount 
 			$ filter ((/=0).snd) jokes
-
-
-
