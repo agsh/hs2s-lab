@@ -68,7 +68,7 @@ tuplesToTeachers [] = []
 tuplesToTeachers ((name, jokes):xs) = Teacher name jokes : tuplesToTeachers xs
 
 outputTeachers :: Teacher -> [Char]
-outputTeachers (Teacher name jokes) = (printf "%4d %6s ---> %40s" jokes  (perls :: String) (name :: String) :: String)
+outputTeachers (Teacher name jokes) = (printf "%3d %6s ---> %40s" jokes  (perls :: String) (name :: String) :: String)
 	where
 		perls = if elem last_digit [5,6,7,8,9,0]
 				then
@@ -98,14 +98,14 @@ main = do
 				tuples
 	jokes <- jokesIO
 
-	putStrLn . unlines . map outputTeachers $ tuplesToTeachers $ sortOnJokesCount $ filter ((/=0).snd) jokes
-
-
-
-
-
-
-
+	putStrLn . unlines . 
+		map 
+			(\(index, value) -> (show index) ++ ") " ++ value ) 
+			$ zip [1..] 
+			$ map outputTeachers 
+			$ tuplesToTeachers 
+			$ sortOnJokesCount 
+			$ filter ((/=0).snd) jokes
 
 
 
