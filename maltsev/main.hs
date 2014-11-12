@@ -4,6 +4,7 @@ import Text.Printf
 import Text.Regex.Posix
 import Data.Function (on)
 import Data.List (sortBy, nubBy)
+import Data.Text (intercalate)
 import Network.HTTP.Conduit (simpleHttp)
 import Codec.Text.IConv as IConv
 import qualified Data.Text as T
@@ -34,6 +35,7 @@ extractTitles = T.concat . attribute "title"
 extractHrefs = T.concat . attribute "href"
 extractData = T.concat . content
 
+processData :: [T.Text] -> IO ()
 processData = putStrLn . T.unpack . T.concat
 
 cursorFor :: String -> IO Cursor
@@ -67,51 +69,56 @@ tuplesToTeachers :: [(String, Int)] -> [Teacher]
 tuplesToTeachers [] = []
 tuplesToTeachers ((name, jokes):xs) = Teacher name jokes : tuplesToTeachers xs
 
-symEq :: (String, Int) -> (String, Int) -> Bool
+symEq :: Eq a => (a, a) -> (a, a) -> Bool
 symEq (x,y) (u,v) = (x == u && y == v)
 
-removeDuplTuples :: [(String, Int)] -> [(String, Int)]
+removeDuplTuples :: Eq a => [(a, a)] -> [(a, a)]
 removeDuplTuples = nubBy symEq
+ 
+perls_on_russian jokes 
+	| elem last_digit [5,6,7,8,9,0] = "перлов"
+	| elem last_digit [2,3,4] = "перла"
+	| otherwise = "перл"
+	where
+		last_digit = (jokes `mod` 10)
+
 
 outputTeachers :: Teacher -> [Char]
-outputTeachers (Teacher name jokes) = (printf "%3d %6s %10s %40s" jokes  (perls :: String) ("--->" :: String) (name :: String) :: String)
+outputTeachers (Teacher name jokes) = (printf "%3d %6s %6s %-40s" jokes  (perls :: String) ("--->" :: String) (name :: String) :: String)
 	where
-		perls = if elem last_digit [5,6,7,8,9,0]
-				then
-					"перлов"
-				else
-					if elem last_digit [2,3,4]
-					then
-						"перла"
-					else
-						"перл"
-						where
-							last_digit = (jokes `mod` 10)
+		perls = perls_on_russian jokes
+							
 
+counter :: PrintfType t => Int -> Int -> t
+counter done all = printf ((replicate 16 '\8') ++ "%*d out of %*d" :: String) (length $ show done :: Int) (done :: Int) (length $ show all :: Int) (all :: Int)
+
+main :: IO ()
 main = do
 	cursor1 <- cursorFor teachersList
+	putStrLn "Collecting data ..."
 	let
-		only = 1100
+		only = 1019
 		titles = map T.unpack $ cursor1 $// findHrefsAndTitles &| extractTitles
 		hrefs = map T.unpack $ cursor1 $// findHrefsAndTitles &| extractHrefs
-		tuples = take only $ filter ((=~ ("/mephist/prepods.nsf/id/.*" :: String)).snd) $ generateTuples titles hrefs
+		tuples = take only $ zip [1..] $ removeDuplTuples $ filter ((=~ ("/mephist/prepods.nsf/id/.*" :: String)).snd) $ generateTuples titles hrefs
+		tup_len = length tuples
 		jokesIO = 
 			mapM
-				(\tuple -> do
+				(\(index, tuple) -> do
 					c <- cursorFor $ printf baseUrl $ snd tuple
-					putStr "."
+					putStr $ counter index tup_len
 					return $ ((fst tuple), real_jokes $ last $ map T.unpack $ c $// findJokesCount &| extractData)
 				)
 				tuples
 	jokes <- jokesIO
-	putStrLn " Collected all data. Processing ..."
+	putStrLn "\nAll data collected. Processing ...\n"
 
 	putStrLn . unlines . 
 		map 
 			(\(index, value) -> (printf "%3s) " $ show index) ++ value ) 
-			$ zip [1..] 
+			$ zip [1..]
 			$ map outputTeachers 
 			$ tuplesToTeachers 
-			$ removeDuplTuples
 			$ sortOnJokesCount 
 			$ filter ((/=0).snd) jokes
+
