@@ -1,13 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Network.HTTP.Conduit (simpleHttp)
-import qualified Data.ByteString.Lazy.Char8 as L
 import qualified Data.Text as T
-import Data.Text (replace)
 import Text.HTML.DOM (parseLBS)
-import Text.XML.Cursor (Cursor, attributeIs, content, element, fromDocument, child, attribute, checkElement, check, following, ($//), (&|), (&//), (&/), (>=>))
+import Text.XML.Cursor (Cursor, attributeIs, content, element, fromDocument, child, attribute, check, following, ($//), (&|), (&//), (&/), (>=>))
 import Network (withSocketsDo)
-import Control.Exception
 import Data.List (delete)
 
 -- перевод строки
@@ -58,14 +55,21 @@ priiint (a,b) = a ++ " - " ++ b
 
 main = do
 	cursor <- cursorFor url
-	let	links = cursor $// findNodes &| extractLink --тип [T.Text] для возврата IO [T.Text]
-	--delete ("http://wikipedia.org//fr.wikipedia.org/wiki/FSProg") 
-						-- $ delete ("http://wikipedia.org/w/index.php?title=MKR_(programming_language)&action=edit&redlink=1") 
-		names = cursor $// (findNodes >=> child) &| extractName
-		pairs = take 50 $ delete (("http://wikipedia.org/wiki/Cach%C3%A9_ObjectScript","Cach\233 ObjectScript")) $ delete (("http://wikipedia.org/w/index.php?title=MKR_(programming_language)&action=edit&redlink=1","mKR")) $ delete (("http://wikipedia.org//fr.wikipedia.org/wiki/FSProg","FSProg")) $ zip links names
+	let	links = cursor $// findNodes &| extractLink --выдираем ссылки на языки
+		names = cursor $// (findNodes >=> child) &| extractName --выдираем названия языков
+		--удаляем языки с кривыми названиями и ссылками
+		pairs = delete ("http://wikipedia.org/wiki/Plankalk%C3%BCl","Plankalk\252l")
+			$ delete ("http://wikipedia.org/wiki/G%C3%B6del_(programming_language)","G\246del")
+			$ delete ("http://wikipedia.org/wiki/Fj%C3%B6lnir_(programming_language)","Fj\246lnir") 
+			$ delete (("http://wikipedia.org/wiki/Cach%C3%A9_ObjectScript","Cach\233 ObjectScript")) 
+			$ delete (("http://wikipedia.org/w/index.php?title=MKR_(programming_language)&action=edit&redlink=1","mKR")) 
+			$ delete (("http://wikipedia.org//fr.wikipedia.org/wiki/FSProg","FSProg")) 
+			$ zip links names
 
+	--собираем годы выпуска
 	year <- (mapM resList pairs)
 	let	years = map unpackList (map takeThird year)
-		result = zip (map T.unpack names) $ map T.unpack years
+		result = zip (map (\(a,b) -> T.unpack b) pairs) $ map T.unpack years
 	
+	--принтим
 	mapM_ putStrLn $  map priiint $ filter (\(a,b) -> b /= "\\") result
