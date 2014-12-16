@@ -1,0 +1,75 @@
+{-# LANGUAGE OverloadedStrings #-}
+
+import Network.HTTP.Conduit (simpleHttp)
+import qualified Data.Text as T
+import Text.HTML.DOM (parseLBS)
+import Text.XML.Cursor (Cursor, attributeIs, content, element, fromDocument, child, attribute, check, following, ($//), (&|), (&//), (&/), (>=>))
+import Network (withSocketsDo)
+import Data.List (delete)
+
+-- перевод строки
+n = T.pack "\n"
+
+-- список ЯП на wiki
+url = "http://en.wikipedia.org/wiki/List_of_programming_languages"
+
+--извлечь языки
+findNodes :: Cursor -> [Cursor]
+findNodes = element "td" >=> attributeIs "style" "width: 33.33%;text-align:left;vertical-align:top;" &// element "ul" &// element "li" &// element "a"  -- >=> child
+
+--Извлечь ссылку
+extractLink :: Cursor -> T.Text
+extractLink = T.append "http://wikipedia.org" . T.concat . attribute "href"   --http://en.wikipedia.org
+
+--Извлечь имя
+extractName :: Cursor -> T.Text
+extractName = T.concat . content
+
+--Извлекаем содержимое страницы, парсим её и возвращаем курсор на корень DOM-дерева
+cursorFor :: String -> IO Cursor
+cursorFor u = do
+	page <- withSocketsDo $ simpleHttp u
+	return $ fromDocument $ parseLBS page
+
+--установка курсора на тег, содержащий в себе туг с годом
+findAppear :: Cursor -> [Cursor]
+findAppear = element "table" >=> attributeIs "class" "infobox vevent" &// element "tr" &// element "th"  &// check (\x -> (T.unpack $ T.concat (content x) :: String) == ("Appeared in" :: String) :: Bool) >=> following    -- &// element "span" -- >=> child -- >=> content "Appeared in"
+
+--взять тег с годом
+takeThird [] = []
+takeThird (x:y:z:xs) = z:[]
+
+--преобразовать список списков из одного элемента в просто список
+unpackList :: [T.Text] -> T.Text
+unpackList [] = T.pack "\\"
+unpackList (x:[]) = x
+
+--вытащить ссылку на страницу с языком и поставить курсор на тег перед годом
+resList = (\(link,name) -> do
+	c <- cursorFor $ T.unpack $ link
+	return $ c $// findAppear &| extractName)
+	  
+--преобразовать пару строк в строку
+priiint :: (String, String) -> String
+priiint (a,b) = a ++ " - " ++ b
+
+main = do
+	cursor <- cursorFor url
+	let	links = cursor $// findNodes &| extractLink --выдираем ссылки на языки
+		names = cursor $// (findNodes >=> child) &| extractName --выдираем названия языков
+		--удаляем языки с кривыми названиями и ссылками
+		pairs = delete ("http://wikipedia.org/wiki/Plankalk%C3%BCl","Plankalk\252l")
+			$ delete ("http://wikipedia.org/wiki/G%C3%B6del_(programming_language)","G\246del")
+			$ delete ("http://wikipedia.org/wiki/Fj%C3%B6lnir_(programming_language)","Fj\246lnir") 
+			$ delete (("http://wikipedia.org/wiki/Cach%C3%A9_ObjectScript","Cach\233 ObjectScript")) 
+			$ delete (("http://wikipedia.org/w/index.php?title=MKR_(programming_language)&action=edit&redlink=1","mKR")) 
+			$ delete (("http://wikipedia.org//fr.wikipedia.org/wiki/FSProg","FSProg")) 
+			$ zip links names
+
+	--собираем годы выпуска
+	year <- (mapM resList pairs)
+	let	years = map unpackList (map takeThird year)
+		result = zip (map (\(a,b) -> T.unpack b) pairs) $ map T.unpack years
+	
+	--принтим
+	mapM_ putStrLn $  map priiint $ filter (\(a,b) -> b /= "\\") result
